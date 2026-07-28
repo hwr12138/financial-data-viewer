@@ -1,0 +1,19 @@
+# Secrets. This entry exists before the first commit that could carry a key, because a key
+# committed once is a key that has to be rotated on the API server (SPEC §8).
+.streamlit/secrets.toml
+
+# The example file is the one that gets committed.
+!.streamlit/secrets.toml.example
+
+# Environments
+.venv/
+venv/
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+
+# macOS
+.DS_Store
