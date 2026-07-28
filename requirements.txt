@@ -1,0 +1,5 @@
+# Runtime dependencies only. Community Cloud installs this file verbatim, so test-only
+# packages live in requirements-dev.txt rather than being shipped to the app container.
+streamlit==1.60.0
+httpx==0.28.1
+pandas==3.0.5

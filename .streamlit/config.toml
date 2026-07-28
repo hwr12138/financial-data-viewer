@@ -1,0 +1,5 @@
+[client]
+# This is a private tool and the audience is the person who built it. An uncaught exception
+# showing its traceback on the page is the point (SPEC §7.1) — nobody reads Community Cloud
+# logs, so a failure that only lands there is a failure nobody sees.
+showErrorDetails = "full"

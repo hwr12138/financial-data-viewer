@@ -1,0 +1,27 @@
+# Tool configuration only. Deliberately no [project] table: Community Cloud installs from
+# requirements.txt, and a [project] table would invite it to try installing this repo as a
+# package instead.
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle — E722 is bare `except`, required by SPEC §7.1
+    "F",   # pyflakes
+    "I",   # import sorting
+    "UP",  # pyupgrade
+    "B",   # bugbear
+    "ANN", # missing type annotations — SPEC §12 requires type hints throughout
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Test functions return None and say so by not saying so.
+"tests/*" = ["ANN201"]
+
+[tool.pytest.ini_options]
+# Put the repo root on sys.path so tests can `from viewer... import`. tests/ is deliberately
+# not a package — SPEC §8 wants these tests trivially runnable.
+pythonpath = ["."]
+testpaths = ["tests"]
