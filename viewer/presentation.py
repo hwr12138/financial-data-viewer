@@ -239,6 +239,18 @@ def column_label(fiscal_year: int) -> str:
     return f"FY{fiscal_year}"
 
 
+def format_observed(value: float) -> str:
+    """A raw diagnostic figure from a `/health` finding.
+
+    Deliberately unscaled: `observed` mixes balance-sheet dollars with ratios like a
+    year-on-year `change` of 22.0, and putting either through the millions formatter would
+    misreport one of them. These are evidence for a human, not table figures.
+    """
+    if abs(value) >= 1000:
+        return f"{value:,.0f}"
+    return f"{value:,.4g}"
+
+
 # -- tables ----------------------------------------------------------------------------
 
 

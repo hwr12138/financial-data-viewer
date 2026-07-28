@@ -320,34 +320,23 @@ def parse_health(payload: object, ticker: str) -> Health:
 # -- concepts --------------------------------------------------------------------------
 
 
-@dataclass(frozen=True, slots=True)
-class ConceptDefinition:
-    name: str
-    statement: str
-    unit: str
-    description: str
+def parse_concept_units(payload: object) -> dict[str, str]:
+    """Validate `/concepts` into concept name -> expected unit.
 
+    The unit is the only field this app consumes. `/concepts` carries no display label —
+    its `description` is a paragraph, not a label — so labels come from
+    `presentation.LABELS` instead, and the rest of the definition is not read.
 
-def parse_concepts(payload: object) -> dict[str, ConceptDefinition]:
-    """Validate `/concepts` into a name-keyed mapping.
-
-    Supplies the expected `unit` per concept, which is the authority for the SPEC §6
-    unit check, and `description`, used as row help text. It carries no display label —
-    `description` is a paragraph — so labels come from `presentation.LABELS`.
+    This mapping is the authority for the SPEC §6 unit check: it is what makes "revenue
+    arrived denominated in shares" detectable rather than merely odd-looking.
     """
     where = "/concepts"
     body = _as_object(payload, where)
 
-    definitions: dict[str, ConceptDefinition] = {}
+    units: dict[str, str] = {}
     for entry in _sequence(body, "concepts", where):
         entry_body = _as_object(entry, f"{where} concepts[]")
         name = _string(entry_body, "name", f"{where} concepts[]")
-        concept_where = f"{where} {name!r}"
-        definitions[name] = ConceptDefinition(
-            name=name,
-            statement=_string(entry_body, "statement", concept_where),
-            unit=_string(entry_body, "unit", concept_where),
-            description=_string(entry_body, "description", concept_where),
-        )
+        units[name] = _string(entry_body, "unit", f"{where} {name!r}")
 
-    return definitions
+    return units
