@@ -147,6 +147,8 @@ def render_statement(
 ) -> None:
     st.subheader(statement.title)
     st.caption(presentation.UNIT_NOTE)
+    if statement.note:
+        st.caption(statement.note)
 
     try:
         frame = presentation.build_statement_frame(statement, annual.years, units)

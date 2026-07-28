@@ -93,16 +93,18 @@ CASH_FLOW_ROWS: tuple[str, ...] = (
 class Statement:
     title: str
     rows: tuple[str, ...]
+    note: str = ""
 
 
-STATEMENTS: tuple[Statement, ...] = (
-    Statement("Income Statement", INCOME_STATEMENT_ROWS),
-    Statement("Balance Sheet", BALANCE_SHEET_ROWS),
-    Statement("Cash Flow", CASH_FLOW_ROWS),
-)
+# Concepts the API serves as positive outflow magnitudes, exactly as the underlying tag was
+# filed — they are payments, so the XBRL fact is positive even though the cash moves out.
+# The app does not negate them: sign-flipping here would disagree with the API, and applying
+# it to capex but not to expenses like cost_of_revenue would be arbitrary. It is a caption
+# instead, so the convention is stated rather than silently assumed.
+POSITIVE_OUTFLOWS: tuple[str, ...] = ("capex", "dividends_paid", "share_repurchases")
 
 DISPLAYED_CONCEPTS: frozenset[str] = frozenset(
-    concept for statement in STATEMENTS for concept in statement.rows
+    INCOME_STATEMENT_ROWS + BALANCE_SHEET_ROWS + CASH_FLOW_ROWS
 )
 
 
@@ -151,6 +153,28 @@ LABELS: Mapping[str, str] = {
     "share_repurchases": "Share repurchases",
 }
 
+
+def _outflow_note() -> str:
+    """The Cash Flow sign caption, worded from POSITIVE_OUTFLOWS rather than hardcoded.
+
+    Generated so the sentence cannot drift from the rows it describes — a note naming
+    concepts the table no longer shows would be worse than no note.
+    """
+    names = [LABELS[concept].lower() for concept in POSITIVE_OUTFLOWS]
+    listed = f"{', '.join(names[:-1])} and {names[-1]}"
+    return (
+        f"{listed[0].upper()}{listed[1:]} are cash outflows. They are shown as positive "
+        "magnitudes exactly as filed, so they appear without the parentheses the filing's "
+        "own statement uses. No sign is flipped anywhere in this app."
+    )
+
+
+STATEMENTS: tuple[Statement, ...] = (
+    Statement("Income Statement", INCOME_STATEMENT_ROWS),
+    Statement("Balance Sheet", BALANCE_SHEET_ROWS),
+    Statement("Cash Flow", CASH_FLOW_ROWS, note=_outflow_note()),
+)
+
 # Used only if `/concepts` is unreachable or changes shape, so the app still renders and
 # still enforces the §6 unit check. Mirrors the API's own concept definitions.
 FALLBACK_UNITS: Mapping[str, str] = {
@@ -180,6 +204,15 @@ def _check_tables() -> None:
     duplicates = sorted({label for label in labels if labels.count(label) > 1})
     if duplicates:
         raise ValueError(f"presentation.LABELS has duplicate labels: {', '.join(duplicates)}")
+
+    # The caption claims these rows appear in the Cash Flow table. If one were moved or
+    # dropped, the note would describe rows that are not there.
+    stray_outflows = sorted(set(POSITIVE_OUTFLOWS) - set(CASH_FLOW_ROWS))
+    if stray_outflows:
+        raise ValueError(
+            f"presentation.POSITIVE_OUTFLOWS names concepts absent from CASH_FLOW_ROWS: "
+            f"{', '.join(stray_outflows)}"
+        )
 
 
 _check_tables()

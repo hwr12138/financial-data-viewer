@@ -81,6 +81,28 @@ Provenance uses the **per-concept** accession, not the year block's. A single 10
 restate the income statement three years back and the balance sheet only two, so concepts
 within one fiscal year legitimately trace to different filings.
 
+### Why capex is not shown negative
+
+`capex`, `dividends_paid` and `share_repurchases` are cash outflows, but the API serves them
+**positive**, because the underlying XBRL facts are payments and are filed positive. The
+filing's own statement shows them in parentheses via a negated presentation label.
+
+The viewer does not negate them, and the Cash Flow section carries a caption saying so. The
+alternative — flipping signs for display — was considered and rejected:
+
+- The API's convention is load-bearing upstream. It is pinned by dedicated tests, stated in
+  the OpenAPI description consumers read, and `cfo - capex` is the documented way to reach
+  free cash flow. Flipping it there would turn that subtraction into an addition silently.
+- Negating `capex` but not `cost_of_revenue` or `income_tax_expense`, which are equally
+  positive magnitudes of things that reduce a total, would be arbitrary. Negating all of
+  them would mean the viewer re-derives the statement's sign conventions, which SPEC §12
+  rules out.
+- A wrong entry in a negation table produces a plausible wrong number that the app has no
+  way to detect — the same blind spot §7.1 describes for scale errors.
+
+`POSITIVE_OUTFLOWS` in `viewer/presentation.py` names the affected concepts, and the caption
+is generated from it so the wording cannot drift from the rows it describes.
+
 ## Layout
 
 ```
