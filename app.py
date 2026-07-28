@@ -132,6 +132,9 @@ def render_sources(statement: presentation.Statement, annual: Annual) -> None:
             st.error(f"Filing links could not be built: {exc}")
             return
 
+        # Left on the default scrolling height, unlike the statement tables. Sources run to
+        # 140-260 rows for a company with full coverage, so fitting to content would add
+        # thousands of pixels of page per expander.
         st.dataframe(
             sources,
             width="stretch",
@@ -161,7 +164,10 @@ def render_statement(
         st.info(f"No {statement.title.lower()} concepts were reported in any covered year.")
         return
 
-    st.dataframe(frame, width="stretch")
+    # height="content" instead of the default "auto", which caps at ten rows and scrolls the
+    # rest out of sight. A statement is at most 14 rows, and half a balance sheet hidden
+    # behind an inner scrollbar is easy to miss entirely.
+    st.dataframe(frame, width="stretch", height="content")
     render_sources(statement, annual)
 
 
