@@ -7,8 +7,6 @@ Type an exact ticker. There is no search, autocomplete, or company browser. The 
 arithmetic: figures pass through from the API unmodified except for unit scaling and display
 formatting. Every figure links back to the SEC filing it came from.
 
-The full specification is [VIEWER_SPEC.md](VIEWER_SPEC.md).
-
 ## Running locally
 
 ```bash
