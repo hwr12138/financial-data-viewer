@@ -49,7 +49,14 @@ INCOME_STATEMENT_ROWS: tuple[str, ...] = (
     "gross_profit",
     "rnd_expense",
     "sga_expense",
+    # The aggregate expense line, so it follows its own components and leads into operating
+    # income the way a statement's "Total operating expenses" subtotal does.
+    "operating_expenses",
     "operating_income",
+    # Adjacent to operating_income deliberately. The two are close enough to be mistaken for
+    # each other and far enough apart to matter — Berkshire FY2023 reports ~43bn operating
+    # income against ~125bn EBIT — so seeing them side by side is the point.
+    "ebit",
     "interest_expense",
     "pretax_income",
     "income_tax_expense",
@@ -103,6 +110,12 @@ class Statement:
 # instead, so the convention is stated rather than silently assumed.
 POSITIVE_OUTFLOWS: tuple[str, ...] = ("capex", "dividends_paid", "share_repurchases")
 
+# Concepts no us-gaap element reports, which the API therefore always derives. Worth saying
+# on the page: every other row traces to a tag a company chose to file, and these do not.
+# `derivation` and the compound `source_tag` in the Sources table already show it, but only
+# to someone who opens the expander.
+ALWAYS_COMPUTED: tuple[str, ...] = ("ebit",)
+
 DISPLAYED_CONCEPTS: frozenset[str] = frozenset(
     INCOME_STATEMENT_ROWS + BALANCE_SHEET_ROWS + CASH_FLOW_ROWS
 )
@@ -120,7 +133,9 @@ LABELS: Mapping[str, str] = {
     "gross_profit": "Gross profit",
     "rnd_expense": "Research and development",
     "sga_expense": "Selling, general and administrative",
+    "operating_expenses": "Total operating expenses",
     "operating_income": "Operating income",
+    "ebit": "EBIT",
     "interest_expense": "Interest expense",
     "pretax_income": "Pretax income",
     "income_tax_expense": "Income tax expense",
@@ -169,8 +184,17 @@ def _outflow_note() -> str:
     )
 
 
+INCOME_STATEMENT_NOTE = (
+    "EBIT is always computed, as pretax income plus interest expense — no us-gaap element "
+    "reports it — and is not interchangeable with operating income, which stops above "
+    "non-operating items. Total operating expenses is the filer's own tagged subtotal where "
+    "there is one and revenue minus operating income otherwise, so whether it includes cost "
+    "of revenue varies by company; Sources names the tag it came from."
+)
+
+
 STATEMENTS: tuple[Statement, ...] = (
-    Statement("Income Statement", INCOME_STATEMENT_ROWS),
+    Statement("Income Statement", INCOME_STATEMENT_ROWS, note=INCOME_STATEMENT_NOTE),
     Statement("Balance Sheet", BALANCE_SHEET_ROWS),
     Statement("Cash Flow", CASH_FLOW_ROWS, note=_outflow_note()),
 )
@@ -212,6 +236,14 @@ def _check_tables() -> None:
         raise ValueError(
             f"presentation.POSITIVE_OUTFLOWS names concepts absent from CASH_FLOW_ROWS: "
             f"{', '.join(stray_outflows)}"
+        )
+
+    # Same reasoning for the Income Statement note, which speaks about EBIT by name.
+    stray_computed = sorted(set(ALWAYS_COMPUTED) - set(INCOME_STATEMENT_ROWS))
+    if stray_computed:
+        raise ValueError(
+            f"presentation.ALWAYS_COMPUTED names concepts absent from INCOME_STATEMENT_ROWS: "
+            f"{', '.join(stray_computed)}"
         )
 
 
